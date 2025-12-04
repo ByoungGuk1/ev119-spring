@@ -1,4 +1,4 @@
-package com.app.ev119.domain.dto;
+package com.app.ev119.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;

@@ -1,4 +1,4 @@
-package com.app.ev119.domain.dto;
+package com.app.ev119.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
@@ -9,8 +9,9 @@ import java.util.List;
 
 @Data
 @JacksonXmlRootElement(localName = "response")
-public class CheckAvailabilityIllPatientsResponse {
-//  중증질환자 수용가능정보 조회
+public class CheckEmergencyRealtimeResponse {
+//    응급실 실시간 가용병상정보 조회
+
     @JsonProperty("header")
     private Header header;
 
@@ -45,6 +46,6 @@ public class CheckAvailabilityIllPatientsResponse {
     public static class Items {
         @JacksonXmlElementWrapper(useWrapping = false)
         @JsonProperty("item")
-        private List<CheckAvailabilityIllPatientsItem> itemList;
+        private List<CheckEmergencyRealtimeItem> itemList;
     }
 }

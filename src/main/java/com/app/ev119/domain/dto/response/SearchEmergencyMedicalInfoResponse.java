@@ -1,4 +1,4 @@
-package com.app.ev119.domain.dto;
+package com.app.ev119.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
@@ -9,8 +9,8 @@ import java.util.List;
 
 @Data
 @JacksonXmlRootElement(localName = "response")
-public class SearchEmergencyLocationInfoResponse {
-//    응급의료기관 위치정보 조회
+public class SearchEmergencyMedicalInfoResponse {
+//    	응급의료기관 목록정보 조회
     @JsonProperty("header")
     private Header header;
 
@@ -43,9 +43,8 @@ public class SearchEmergencyLocationInfoResponse {
 
     @Data
     public static class Items {
-
         @JacksonXmlElementWrapper(useWrapping = false)
         @JsonProperty("item")
-        private List<SearchEmergencyLocationInfoItem> itemList;
+        private List<Object> itemList;  // 비어 있는 경우를 대비해 Object 또는 원하는 DTO 타입
     }
 }

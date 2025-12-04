@@ -1,4 +1,4 @@
-package com.app.ev119.domain.dto;
+package com.app.ev119.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
@@ -9,8 +9,8 @@ import java.util.List;
 
 @Data
 @JacksonXmlRootElement(localName = "response")
-public class TraumaCenterLIstInfoResponse {
-//    외상센터 목록정보 조회
+public class SearchEmergencyLocationInfoResponse {
+//    응급의료기관 위치정보 조회
     @JsonProperty("header")
     private Header header;
 
@@ -28,7 +28,6 @@ public class TraumaCenterLIstInfoResponse {
 
     @Data
     public static class Body {
-
         @JsonProperty("items")
         private Items items;
 
@@ -45,9 +44,8 @@ public class TraumaCenterLIstInfoResponse {
     @Data
     public static class Items {
 
-        // item 태그가 없기 때문에 빈 리스트 또는 null로 들어올 수 있게 설정
         @JacksonXmlElementWrapper(useWrapping = false)
         @JsonProperty("item")
-        private List<Object> itemList;
+        private List<SearchEmergencyLocationInfoItem> itemList;
     }
 }
