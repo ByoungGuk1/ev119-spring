@@ -13,7 +13,8 @@ import java.util.List;
 @ToString(exclude = {
         "addresses",
         "memberHealths",
-        "memberStaffs"
+        "memberStaffs",
+        "memberSocials"
 })
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor @AllArgsConstructor
@@ -48,10 +49,13 @@ public class Member {
     private List<Address> addresses;
     @OneToMany(mappedBy = "member")
     private List<MemberHealth> memberHealths;
+    @OneToMany(mappedBy = "member")
+    private List<MemberSocial> memberSocials;
 
     {
         addresses = new ArrayList<>();
         memberHealths = new ArrayList<>();
         memberStaffs = new ArrayList<>();
+        memberSocials = new ArrayList<>();
     }
 }

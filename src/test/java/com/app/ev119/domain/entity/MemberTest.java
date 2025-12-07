@@ -1,9 +1,6 @@
 package com.app.ev119.domain.entity;
 
-import com.app.ev119.domain.type.AddressType;
-import com.app.ev119.domain.type.BloodAbo;
-import com.app.ev119.domain.type.BloodRh;
-import com.app.ev119.domain.type.GenderType;
+import com.app.ev119.domain.type.*;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -94,5 +91,31 @@ class MemberTest {
                 .fetch();
 
         fetch.forEach((data)->log.info("{}", data));
+    }
+
+    @Test
+    public void insertMemberSocial(){
+        Member member1 = new Member();
+        member1.setMemberEmail("test123123@gmail.com");
+        entityManager.persist(member1);
+        MemberSocial memberSocial = new MemberSocial();
+        memberSocial.setMemberSocialProviderId("소셜 아이디가 입력됨");
+        memberSocial.setMemberSocialProvider(SocialType.LOCAL);
+        memberSocial.setMember(member1);
+        entityManager.persist(memberSocial);
+    }
+
+    @Test
+    public void getMemberSocial(){
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+        QMember qMember = QMember.member;
+        QMemberSocial qMemberSocial = QMemberSocial.memberSocial;
+        List<Tuple> tuples = jpaQueryFactory
+                .select(qMember, qMemberSocial)
+                .from(qMember)
+                .join(qMemberSocial)
+                .on(qMember.id.eq(qMemberSocial.member.id))
+                .fetch();
+        tuples.forEach((tuple)->log.info("{}", tuple));
     }
 }

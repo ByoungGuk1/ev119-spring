@@ -26,7 +26,7 @@ public class QMemberHealth extends EntityPathBase<MemberHealth> {
 
     public final QMember member;
 
-    public final NumberPath<Integer> MemberHealthCode = createNumber("MemberHealthCode", Integer.class);
+    public final NumberPath<Integer> memberHealthCode = createNumber("memberHealthCode", Integer.class);
 
     public QMemberHealth(String variable) {
         this(MemberHealth.class, forVariable(variable), INITS);
