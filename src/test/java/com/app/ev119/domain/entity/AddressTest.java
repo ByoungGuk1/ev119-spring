@@ -41,7 +41,8 @@ class AddressTest {
         address.setAddressLongitude("경도");
 //        address.setAddressCreateAt();
         address.setAddressType(AddressType.OTHER);
-        Member member = entityManager.find(Member.class, 1L);
+        Member member = entityManager.find(Member.class, 12L);
+        log.info("member:{}",member);
         address.setMember(member);
         entityManager.persist(address);
     }

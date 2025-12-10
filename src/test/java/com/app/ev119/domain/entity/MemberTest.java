@@ -132,6 +132,9 @@ class MemberTest {
                 .on(qMember.id.eq(qAddress.member.id))
                 .fetch();
 
+        List<Long> list = memberAllDatas.stream().map((data) -> data.get(qAddress).getId()).toList();
+                list.forEach((id)->entityManager.remove(entityManager.find(Address.class, id)));
+//                list.forEach((id)->log.info("ids: {}", id));
         memberAllDatas.forEach((data)->log.info("{}", data));
     }
 
