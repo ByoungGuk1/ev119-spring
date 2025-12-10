@@ -9,11 +9,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginResponseDTO {
     private Long memberId;
+    private String memberName;
+    private String memberEmail;
     private String accessToken;
     private String refreshToken;
 
-    public LoginResponseDTO(String accessToken, String refreshToken) {
-        this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
-    }
+//    public LoginResponseDTO(String accessToken, String refreshToken) {
+//        this.accessToken = accessToken;
+//        this.refreshToken = refreshToken;
+//    }
 }

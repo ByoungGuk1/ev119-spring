@@ -44,7 +44,10 @@ public class MemberApi {
                 .sameSite("Lax")
                 .build();
 
-        Map<String, String> data = Map.of(
+        Map<String, Object> data = Map.of(
+                "memberId", loginResponse.getMemberId(),
+                "memberName", loginResponse.getMemberName(),
+                "memberEmail", loginResponse.getMemberEmail(),
                 "accessToken", loginResponse.getAccessToken()
         );
 

@@ -72,7 +72,13 @@ public class MemberService {
         stringRedisTemplate.opsForValue()
                 .set("RT:" + memberId, refreshToken, refreshValidityMs, TimeUnit.MILLISECONDS);
 
-        return new LoginResponseDTO(accessToken, refreshToken);
+        return new LoginResponseDTO(
+                member.getId(),
+                member.getMemberName(),
+                member.getMemberEmail(),
+                accessToken,
+                refreshToken
+        );
     }
 
     @Transactional
