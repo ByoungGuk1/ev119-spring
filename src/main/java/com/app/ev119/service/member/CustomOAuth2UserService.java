@@ -66,9 +66,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .memberEmail(memberInfo.getEmail())
                 .memberPassword(null)
                 .memberName(memberInfo.getName())
-                .memberGender(null)
-                .memberBloodRh(null)
-                .memberBloodAbo(null)
                 .build();
 
         return memberRepository.save(member);

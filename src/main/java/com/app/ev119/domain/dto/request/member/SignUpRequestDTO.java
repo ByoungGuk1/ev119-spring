@@ -22,9 +22,9 @@ public class SignUpRequestDTO {
     private String memberEmail;
     private String memberPassword;
     private String memberPhone;
-//    private GenderType memberGender;
-//    private BloodRh  memberBloodRh;
-//    private BloodAbo memberBloodAbo;
+    private GenderType memberGender;
+    private BloodRh  memberBloodRh;
+    private BloodAbo memberBloodAbo;
 
     private List<MemberStaffDTO> memberStaffs;
     private List<AddressDTO> addresses;

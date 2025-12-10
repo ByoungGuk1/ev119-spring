@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -23,6 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
@@ -30,8 +32,11 @@ import java.util.Map;
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     
     private final JwtTokenProvider jwtTokenProvider;
-    private MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
     private final StringRedisTemplate stringRedisTemplate;
+
+    @Value("${app.frontend.redirect-url}")
+    private String frontendRedirectUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
@@ -62,7 +67,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         //Refresh token -> redis에 저장
         stringRedisTemplate.opsForValue()
-                .set("RT:" + member.getMemberEmail(), refreshToken, refreshTokenExpireMiles);
+                .set("RT:" + member.getMemberEmail(), refreshToken, refreshTokenExpireMiles, TimeUnit.MICROSECONDS);
 
         //Refresh token -> cookie에 저장
         ResponseCookie responseCookie = ResponseCookie.from("refreshToken", refreshToken)
@@ -76,7 +81,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
 
         //Access token은 프론트에 저장
-        String targetUrl = UriComponentsBuilder.fromUriString(request.getRequestURI()).build().toUriString();
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl + "/auth/oauth2/redirect").queryParam("accessToken", accessToken).build().toUriString();
 
         log.info("targetUrl:{}", targetUrl);
 

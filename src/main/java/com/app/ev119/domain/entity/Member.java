@@ -47,6 +47,7 @@ public class Member {
     private List<MemberSocial> memberSocials;
     @OneToMany(mappedBy = "member")
     private List<MemberStaff> memberStaffs;
+    
 
     {
         medications =  new ArrayList<>();

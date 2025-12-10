@@ -23,7 +23,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final StringRedisTemplate stringRedisTemplate; // 문자열용 템플릿만 사용
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Transactional
     public void signUp(SignUpRequestDTO dto) {
@@ -39,6 +39,7 @@ public class MemberService {
         member.setMemberPassword(passwordEncoder.encode(dto.getMemberPassword()));
         member.setMemberName(dto.getMemberName());
         member.setMemberPhone(dto.getMemberPhone());
+
 
         memberRepository.save(member);
     }
