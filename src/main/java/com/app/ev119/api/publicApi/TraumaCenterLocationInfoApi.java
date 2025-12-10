@@ -1,4 +1,4 @@
-package com.app.ev119.api;
+package com.app.ev119.api.publicApi;
 
 import com.app.ev119.domain.dto.ApiResponseDTO;
 import com.app.ev119.domain.dto.request.TraumaCenterLocationInfoRequestDTO;

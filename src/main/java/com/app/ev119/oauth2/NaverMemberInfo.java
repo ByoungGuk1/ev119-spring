@@ -7,30 +7,44 @@ import java.util.Map;
 @AllArgsConstructor
 public class NaverMemberInfo implements OAuth2MemberInfo {
 
-    private Map<String, Object > attributes;
+    private Map<String, Object> attributes;
 
     @Override
     public String getProvider() {
         return "naver";
     }
 
-    @Override
-    public String getProviderId() {
-        return (String) attributes.get("sub");
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getResponse() {
+        Object resp = attributes.get("response");
+        if (resp instanceof Map) {
+            return (Map<String, Object>) resp;
+        }
+        return attributes;
     }
 
     @Override
-    public String getName() {
-        return (String) attributes.get("name");
+    public String getProviderId() {
+        Map<String, Object> response = getResponse();
+        Object id = response.get("id");
+        return id != null ? String.valueOf(id) : null;
     }
 
     @Override
     public String getEmail() {
-        return (String) attributes.get("email");
+        Map<String, Object> response = getResponse();
+        return (String) response.get("email");
+    }
+
+    @Override
+    public String getName() {
+        Map<String, Object> response = getResponse();
+        return (String) response.get("name");
     }
 
     @Override
     public String getMobNo() {
-        return (String) attributes.get("mobile");
+        Map<String, Object> response = getResponse();
+        return (String) response.get("mobile");
     }
- }
+}

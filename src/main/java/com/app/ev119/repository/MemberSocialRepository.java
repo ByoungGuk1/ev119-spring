@@ -22,6 +22,10 @@ public interface MemberSocialRepository extends JpaRepository<MemberSocial, Long
     @Query("SELECT ms.member.id FROM MemberSocial ms WHERE ms.memberSocialProvider = :provider AND ms.memberSocialProviderId = :providerId")
     public Long findMemberIdByProvider(@Param("provider") SocialType provider, @Param("providerId") String providerId);
 
+    @Query("SELECT ms FROM MemberSocial ms WHERE ms.memberSocialProvider = :provider AND ms.memberSocialProviderId = :providerId")
+    java.util.Optional<MemberSocial> findByProviderAndProviderId(@Param("provider") SocialType provider,
+                                                                 @Param("providerId") String providerId);
+
     // 회원 ID로 소셜 데이터 조회
     @Query("SELECT ms FROM MemberSocial ms WHERE ms.member.id = :memberId")
     public List<MemberSocial> findByMemberId(@Param("memberId") Long memberId);

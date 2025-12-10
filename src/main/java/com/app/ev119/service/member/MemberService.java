@@ -8,6 +8,8 @@ import com.app.ev119.jwt.JwtTokenProvider;
 import com.app.ev119.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,12 +20,17 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(rollbackFor = Exception.class)
 public class MemberService {
+
+    @Value("${jwt.token-blacklist-prefix}")
+    private String BLACKLIST_TOKEN_PREFIX;
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate stringRedisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     @Transactional
     public void signUp(SignUpRequestDTO dto) {
@@ -83,5 +90,37 @@ public class MemberService {
         }
     }
 
+    public boolean isBlacklistedRefreshToken(LoginResponseDTO tokenDTO) {
+        if (tokenDTO == null || tokenDTO.getRefreshToken() == null) {
+            return true;
+        }
+
+        Long memberId = tokenDTO.getMemberId();
+        String refreshToken = tokenDTO.getRefreshToken();
+
+        String key = BLACKLIST_TOKEN_PREFIX + memberId;
+
+        try {
+            Boolean exists = redisTemplate.opsForSet().isMember(key, refreshToken);
+            return Boolean.TRUE.equals(exists);
+        } catch (Exception e) {
+            log.error("Redis error while checking blacklist", e);
+            return true;
+        }
+    }
+
+
+
+    public void addBlacklist(String refreshToken, long expirationMs) {
+        String key = BLACKLIST_TOKEN_PREFIX + refreshToken;
+        redisTemplate.opsForValue().set(key, "blacklisted", expirationMs, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean isBlacklisted(String refreshToken) {
+        if (refreshToken == null) return true;
+
+        String key = BLACKLIST_TOKEN_PREFIX + refreshToken;
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
 
 }

@@ -11,6 +11,7 @@
  @EqualsAndHashCode(onlyExplicitlyIncluded = true)
  @NoArgsConstructor @AllArgsConstructor
  @Entity
+ @Builder
  @Table(name = "TBL_MEMBER_SOCIAL")
  @SequenceGenerator(
          name = "SEQ_MEMBER_SOCIAL_GENERATOR",
