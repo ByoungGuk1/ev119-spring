@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -81,7 +82,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
 
         //Access token은 프론트에 저장
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl + "/auth/oauth2/redirect").queryParam("accessToken", accessToken).build().toUriString();
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendRedirectUrl + "/auth/oauth2/redirect")
+                .queryParam("accessToken", accessToken)
+                .queryParam("memberId", member.getId())
+                .queryParam("memberName", member.getMemberName())
+                .queryParam("memberEmail", member.getMemberEmail())
+                .encode(StandardCharsets.UTF_8)
+                .build().toUriString();
 
         log.info("targetUrl:{}", targetUrl);
 
