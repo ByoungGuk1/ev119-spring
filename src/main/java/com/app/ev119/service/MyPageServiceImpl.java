@@ -1,50 +1,28 @@
 package com.app.ev119.service;
 
+import com.app.ev119.domain.dto.AllergyDTO;
+import com.app.ev119.domain.dto.response.member.LoginResponseDTO;
 import com.app.ev119.domain.entity.*;
 import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Service
+@Service @Slf4j
 @RequiredArgsConstructor
 @Transactional(rollbackFor = Exception.class)
 public class MyPageServiceImpl implements MyPageService {
 
-    private final MyPageService myPageService;
     @PersistenceContext
     private EntityManager entityManager;
-
-//    @Override
-//    public Member findMemberByToken(Authentication tokenDTO) {
-//        Object p = tokenDTO.getPrincipal();
-//        Long memberId = null;
-//        String memberEmail = null;
-//        Member member = null;
-//        if (p instanceof LoginResponseDTO urdto) {
-//            memberId = urdto.getMemberId();
-//            memberEmail = entityManager.find(Member.class, memberId).getMemberEmail();
-//        }
-//        if (tokenDTO instanceof org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken oat) {
-//            var attrs = ((org.springframework.security.oauth2.core.user.OAuth2User) oat.getPrincipal()).getAttributes();
-//            String reg = oat.getAuthorizedClientRegistrationId();
-//            if ("google".equals(reg)) memberEmail =  (String) attrs.get("email");
-//            if ("naver".equals(reg))  memberEmail =  (String) ((java.util.Map<?,?>) attrs.get("response")).get("email");
-//            if ("kakao".equals(reg))  memberEmail =  (String) ((java.util.Map<?,?>) attrs.get("kakao_account")).get("email");
-//        }
-//
-//        member = entityManager.find(Member.class, memberEmail);
-//        if(member == null){
-//            throw new RuntimeException("멤버 찾기 중 오류 : MyPageServiceImpl->findMemberByToken");
-//        }
-//
-//        return member;
-//    }
 
     @Override
     public Member modifyMember(Member member) {
@@ -128,37 +106,43 @@ public class MyPageServiceImpl implements MyPageService {
     public Health findHealthByMember(Member member) {
         JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
 
-        QMember qMember = QMember.member;
         QHealth qHealth = QHealth.health;
         QDisease qDisease = QDisease.disease;
 
-        List<Tuple> memberHealthAndDisease = jpaQueryFactory
-                .select(qHealth, qDisease)
-                .from(qMember)
-                .join(qHealth)
-                .on(qMember.id.eq(qHealth.member.id))
-                .join(qDisease)
-                .on(qHealth.id.eq(qDisease.health.id))
-                .where(qMember.id.eq(member.getId()))
+        Health health = jpaQueryFactory
+                .selectFrom(qHealth)
+                .where(qHealth.member.id.eq(member.getId()))
+                .fetchOne();
+
+        if (health == null) {
+            return null;
+        }
+
+        List<Disease> diseaseList = jpaQueryFactory
+                .selectFrom(qDisease)
+                .where(qDisease.health.id.eq(health.getId()))
                 .fetch();
 
-        Health selectedHealth = new Health();
-        List<Disease> diseaseList = memberHealthAndDisease.stream().map((data) -> (Disease)data.get(qDisease)).toList();
-        selectedHealth.setDiseases(diseaseList);
-
-        return selectedHealth;
+        health.setDiseases(diseaseList);
+        return health;
     }
 
     @Override
     public Health addDisease(Health health, String diseaseName) {
-        Disease newDisease = new Disease();
         Health foundHealth = entityManager.find(Health.class, health.getId());
+        if (foundHealth == null) {
+            throw new IllegalArgumentException("Health not found. id=" + health.getId());
+        }
+
+        Disease newDisease = new Disease();
         newDisease.setDiseaseName(diseaseName);
         newDisease.setHealth(foundHealth);
         entityManager.persist(newDisease);
 
-        return myPageService.findHealthByMember(entityManager.find(Member.class, health.getId()));
+        Member member = foundHealth.getMember();
+        return this.findHealthByMember(member);
     }
+
 
     @Override
     public List<Medication> findMedicationByMember(Member member) {
@@ -180,45 +164,76 @@ public class MyPageServiceImpl implements MyPageService {
 
     @Override
     public List<Medication> editMedication(List<Medication> medications) {
+        Long memberId = medications.get(0).getMember().getId();
+        Member member = entityManager.find(Member.class, memberId);
+
+        JPAQueryFactory query = new JPAQueryFactory(entityManager);
+        QMedication qMedication = QMedication.medication;
+
+        List<Medication> oldList = query.selectFrom(qMedication)
+                .where(qMedication.member.id.eq(memberId))
+                .fetch();
+
+        oldList.forEach(entityManager::remove);
+
         medications.forEach(medication -> {
-            Medication editMedication = new Medication();
-            editMedication.setMedicationName(medication.getMedicationName());
-            editMedication.setMember(medication.getMember());
-            entityManager.persist(editMedication);
+            medication.setId(null);
+            medication.setMember(member);
+            entityManager.persist(medication);
         });
 
-        return myPageService.findMedicationByMember(entityManager.find(Member.class, medications.get(0).getMember().getId()));
+        return this.findMedicationByMember(member);
     }
 
     @Override
-    public List<Allergy> findAllergyByMember(Member member) {
-        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+    public List<AllergyDTO> findAllergyByMember(Authentication tokenDTO) {
+        Object memberId = tokenDTO.getPrincipal();
+        Long id = (Long) memberId;
 
-        QMember qMember = QMember.member;
         QAllergy qAllergy = QAllergy.allergy;
 
-        List<Allergy> memberAllergy = jpaQueryFactory
-                .select(qAllergy)
-                .from(qMember)
-                .join(qAllergy)
-                .on(qMember.id.eq(qAllergy.member.id))
-                .where(qMember.id.eq(member.getId()))
-                .fetch();
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
 
-        return memberAllergy;
+        List<Allergy> allergies = jpaQueryFactory
+                .select(qAllergy.allergy)
+                .from(qAllergy)
+                .where(qAllergy.member.id.eq(id))
+                .stream().toList();
+
+        List<AllergyDTO> allergyDTOList = allergies.stream().map(data -> {
+            AllergyDTO newData = new AllergyDTO();
+            newData.setId(data.getId());
+            newData.setAllergyName(data.getAllergyName());
+            newData.setAllergyType(data.getAllergyType());
+            newData.setMemberId(data.getMember().getId());
+            return newData;
+        }).toList();
+
+        return allergyDTOList;
     }
 
     @Override
     public List<Allergy> editAllergy(List<Allergy> allergies) {
-        allergies.forEach(allergy -> {
-        Allergy editAllergy = new Allergy();
-        editAllergy.setAllergyName(allergy.getAllergyName());
-        editAllergy.setAllergyType(allergy.getAllergyType());
-        editAllergy.setMember(allergy.getMember());
-        entityManager.persist(editAllergy);
+    Long memberId = allergies.get(0).getMember().getId();
+    Member member = entityManager.find(Member.class, memberId);
+
+    JPAQueryFactory query = new JPAQueryFactory(entityManager);
+    QAllergy qAllergy = QAllergy.allergy;
+
+    List<Allergy> oldList = query.selectFrom(qAllergy)
+            .where(qAllergy.member.id.eq(memberId))
+            .fetch();
+
+    oldList.forEach(entityManager::remove);
+
+    allergies.forEach(medication -> {
+        medication.setId(null);
+        medication.setMember(member);
+        entityManager.persist(medication);
     });
 
-        return myPageService.findAllergyByMember(entityManager.find(Member.class, allergies.get(0).getMember().getId()));
+//    return this.findAllergyByMember(member.getMemberEmail());
+        return List.of();
 }
 
     @Override
@@ -241,16 +256,25 @@ public class MyPageServiceImpl implements MyPageService {
 
     @Override
     public List<EmergencyPhone> editEmergencyPhone(List<EmergencyPhone> emergencyPhones) {
-        emergencyPhones.forEach(emergencyPhone -> {
-            EmergencyPhone editEmergencyPhone = new EmergencyPhone();
-            editEmergencyPhone.setEmergencyPhoneName(emergencyPhone.getEmergencyPhoneName());
-            editEmergencyPhone.setEmergencyPhoneRelationship(emergencyPhone.getEmergencyPhoneRelationship());
-            editEmergencyPhone.setEmergencyPhoneNumber(emergencyPhone.getEmergencyPhoneNumber());
-            editEmergencyPhone.setMember(emergencyPhone.getMember());
-            entityManager.persist(editEmergencyPhone);
+        Long memberId = emergencyPhones.get(0).getMember().getId();
+        Member member = entityManager.find(Member.class, memberId);
+
+        JPAQueryFactory query = new JPAQueryFactory(entityManager);
+        QEmergencyPhone qEmergencyPhone = QEmergencyPhone.emergencyPhone;
+
+        List<EmergencyPhone> oldList = query.selectFrom(qEmergencyPhone)
+                .where(qEmergencyPhone.member.id.eq(memberId))
+                .fetch();
+
+        oldList.forEach(entityManager::remove);
+
+        emergencyPhones.forEach(medication -> {
+            medication.setId(null);
+            medication.setMember(member);
+            entityManager.persist(medication);
         });
 
-        return myPageService.findEmergencyPhoneByMember(entityManager.find(Member.class, emergencyPhones.get(0).getMember().getId()));
+        return this.findEmergencyPhoneByMember(member);
     }
 
     @Override
@@ -276,13 +300,14 @@ public class MyPageServiceImpl implements MyPageService {
         visited.setMember(member);
         entityManager.persist(visited);
 
-        return myPageService.findVisitedByMember(entityManager.find(Member.class, visited.getMember().getId()));
+        return this.findVisitedByMember(entityManager.find(Member.class, visited.getMember().getId()));
     }
 
     @Override
     public List<Visited> removeVisited(Visited visited) {
+        Visited foundVisited = entityManager.find(Visited.class, visited.getId());
         Member member = visited.getMember();
-        entityManager.remove(visited);
-        return myPageService.findVisitedByMember(entityManager.find(Member.class, member.getId()));
+        entityManager.remove(foundVisited);
+        return this.findVisitedByMember(entityManager.find(Member.class, member.getId()));
     }
 }

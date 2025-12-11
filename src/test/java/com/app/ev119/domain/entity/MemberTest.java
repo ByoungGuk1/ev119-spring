@@ -8,7 +8,9 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.Commit;
 
 import java.util.List;
@@ -18,13 +20,15 @@ import java.util.List;
 class MemberTest {
     @PersistenceContext
     private EntityManager entityManager;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     @Test
     void insertAllMemberData(){
         Member member1 = new Member();
 
         member1.setMemberName("김길동");
         member1.setMemberEmail("test1234@gmail.com");
-        member1.setMemberPassword("1234");
+        member1.setMemberPassword(passwordEncoder.encode("1234"));
         member1.setMemberPhone("01013572468");
         entityManager.persist(member1);
 

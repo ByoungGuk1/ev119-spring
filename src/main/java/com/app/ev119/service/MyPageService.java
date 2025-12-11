@@ -1,5 +1,6 @@
 package com.app.ev119.service;
 
+import com.app.ev119.domain.dto.AllergyDTO;
 import com.app.ev119.domain.dto.response.member.LoginResponseDTO;
 import com.app.ev119.domain.entity.*;
 import org.springframework.security.core.Authentication;
@@ -8,8 +9,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MyPageService {
-//    public Member findMemberByToken(Authentication tokenDTO);
-
 //    회원 정보 수정
     public Member modifyMember(Member member);
     public void removeMember(Member member);
@@ -26,7 +25,7 @@ public interface MyPageService {
     public List<Medication> editMedication(List<Medication> medications);
 
 //    알레르기
-    public List<Allergy> findAllergyByMember(Member member);
+    public List<AllergyDTO> findAllergyByMember(Authentication tokenDTO);
     public List<Allergy> editAllergy(List<Allergy> allergies);
 
 //    응급 연락처
