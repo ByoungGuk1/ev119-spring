@@ -26,6 +26,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     // 이름과 이메일로 회원 찾기
     public Optional<Member> findByMemberNameAndMemberEmail(String memberName, String memberEmail);
 
+    // 전화번호로 아이디 찾기
+    Optional<Member> findByMemberPhone(String memberPhone);
+
     // 이름으로 이메일 목록 찾기
     @Query("SELECT m.memberEmail FROM Member m WHERE m.memberName = :name")
     public List<String> findEmailsByMemberName(@Param("name") String name);
@@ -41,5 +44,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     // 회원 삭제
     public void delete(Member member);
+
 
 }

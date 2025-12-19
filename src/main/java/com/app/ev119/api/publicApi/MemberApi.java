@@ -2,9 +2,11 @@ package com.app.ev119.api.publicApi;
 
 import com.app.ev119.domain.dto.ApiResponseDTO;
 import com.app.ev119.domain.dto.request.member.LoginRequestDTO;
+import com.app.ev119.domain.dto.request.member.ResetPasswordRequestDTO;
 import com.app.ev119.domain.dto.request.member.SignUpRequestDTO;
 import com.app.ev119.domain.dto.response.member.LoginResponseDTO;
 import com.app.ev119.service.member.MemberService;
+import com.app.ev119.service.sms.SmsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -19,6 +21,7 @@ import java.util.Map;
 public class MemberApi {
 
     private final MemberService memberService;
+    private final SmsService smsService;
 
     // 회원가입
     @PostMapping("/signup")
@@ -101,7 +104,7 @@ public class MemberApi {
 
         LoginResponseDTO tokenResponse = memberService.refreshToken(refreshToken);
 
-        ResponseCookie cookie = ResponseCookie.from("refresh token", tokenResponse.getRefreshToken())
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
                 .httpOnly(true)
                 .path("/")
                 .maxAge(60L * 60 * 24 * 7)
@@ -115,7 +118,29 @@ public class MemberApi {
                 "accessToken", tokenResponse.getAccessToken()
         );
 
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(ApiResponseDTO.of("토큰이 재발급 되었습니다"));
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(ApiResponseDTO.of("토큰이 재발급 되었습니다", data));
     }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<ApiResponseDTO> resetPassword(@RequestBody ResetPasswordRequestDTO dto) {
+        memberService.resetPassword(dto.getResetToken(), dto.getNewPassword());
+        return ResponseEntity.ok(ApiResponseDTO.of("비밀번호 변경 완료"));
+    }
+
+
+    @PostMapping("/verify")
+    public ResponseEntity<ApiResponseDTO> verify(@RequestParam String authCode,
+                                                 @RequestParam String memberPhone) {
+
+        String resetToken = smsService.verifyAndIssueResetToken(authCode, memberPhone);
+
+        Map<String, Object> data = Map.of(
+                "resetToken", resetToken,
+                "memberPhone", memberPhone
+        );
+
+        return ResponseEntity.ok(ApiResponseDTO.of("인증되었습니다.", data));
+    }
+
 
 }
