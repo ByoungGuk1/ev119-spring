@@ -17,7 +17,7 @@ public class JwtTokenProvider {
     private final SecretKey key;
 
     // 유효시간
-    @Value("${jwt.access-token-validity-in-ms:1800000}")
+    @Value("${jwt.access-token-validity-in-ms:2592000000}")
     private long accessTokenValidityInMs;
 
     // RefreshToken 유효시간
