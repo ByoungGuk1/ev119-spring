@@ -28,9 +28,13 @@ public class Member {
     @Id @GeneratedValue(strategy = GenerationType.AUTO, generator = "SEQ_MEMBER_GENERATOR")
     @EqualsAndHashCode.Include
     private Long id;
+
+    @Column(unique = true, nullable = false)
     private String memberEmail;
     private String memberPassword;
     private String memberName;
+
+    @Column(unique = true, nullable = false)
     private String memberPhone;
 
     @OneToOne(cascade = CascadeType.ALL)

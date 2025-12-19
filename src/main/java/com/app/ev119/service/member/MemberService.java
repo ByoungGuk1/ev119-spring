@@ -11,10 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.support.CustomSQLExceptionTranslatorRegistrar;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.lang.model.type.ErrorType;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -180,5 +182,49 @@ public class MemberService {
                 newRefreshToken
         );
     }
+
+    // 전화번호 중복 체크
+    public void validateDuplicatePhone(String memberPhone) {
+        if(memberRepository.findByMemberPhone(memberPhone).isPresent()) {
+            throw new IllegalArgumentException("이미 등록된 전화번호입니다.");
+        }
+    }
+
+    private String normalizePhone(String memberPhone) {
+        if (memberPhone == null) return null;
+        return memberPhone.replaceAll("\\D", "");
+    }
+
+    @Transactional
+    public void resetPassword(String resetToken, String newPassword) {
+        if (resetToken == null || resetToken.isBlank()) {
+            throw new IllegalArgumentException("resetToken이 없습니다.");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+        }
+        if (newPassword.length() < 8) {
+            throw new IllegalArgumentException("비밀번호는 최소 8자 이상이어야 합니다.");
+        }
+
+        String key = "RESET_PW:" + resetToken;
+
+        String memberPhoneFromRedis = stringRedisTemplate.opsForValue().get(key);
+        if (memberPhoneFromRedis == null || memberPhoneFromRedis.isBlank()) {
+            throw new IllegalArgumentException("resetToken이 만료되었거나 유효하지 않습니다.");
+        }
+
+        String normalizedPhone = normalizePhone(memberPhoneFromRedis);
+
+        Member member = memberRepository.findByMemberPhone(normalizedPhone)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회원이 존재하지 않습니다."));
+
+        member.setMemberPassword(passwordEncoder.encode(newPassword));
+
+        stringRedisTemplate.delete(key);
+    }
+
+
+
 
 }
