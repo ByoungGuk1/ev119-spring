@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,19 +42,43 @@ public class AllergyServiceImpl implements AllergyService {
     @Override
     public void modifyAllergies(Long memberId, List<AllergyDTO> allergyDTOs) {
         Member member = entityManager.find(Member.class, memberId);
-        List<Allergy> allergyList = allergyDTOs.stream().map((allergyDTO -> {
-            Allergy allergy = new Allergy();
-            if(allergyDTO.getId() != null) {
-                allergy.setId(allergyDTO.getId());
+
+        List<Allergy> existingAllergies = allergyRepository.findByMember_Id(memberId);
+        Set<Long> existingIds = existingAllergies.stream()
+                .map(Allergy::getId)
+                .collect(Collectors.toSet());
+
+        Set<Long> incomingIds = allergyDTOs.stream()
+                .map(AllergyDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<Allergy> toDelete = existingAllergies.stream()
+                .filter(allergy -> !incomingIds.contains(allergy.getId()))
+                .toList();
+
+        for (Allergy allergy : toDelete) {
+            allergyRepository.delete(allergy);
+        }
+
+        List<Allergy> allergyList = allergyDTOs.stream().map(allergyDTO -> {
+            Allergy allergy;
+
+            if (allergyDTO.getId() != null && existingIds.contains(allergyDTO.getId())) {
+                allergy = allergyRepository.findById(allergyDTO.getId())
+                        .orElse(new Allergy());
+            } else {
+                allergy = new Allergy();
             }
-            if (allergyDTO.getId() == null || allergy == null) {
-                allergy.setMember(member);
-                allergy.setAllergyName(allergyDTO.getAllergyName());
-                allergy.setAllergyType(allergyDTO.getAllergyType());
-                allergyRepository.saveAllergy(allergy);
-            }
+
+            allergy.setMember(member);
+            allergy.setAllergyName(allergyDTO.getAllergyName());
+            allergy.setAllergyType(allergyDTO.getAllergyType());
+            allergyRepository.saveAllergy(allergy);
+
             return allergy;
-        })).toList();
+        }).toList();
+
         member.setAllergies(allergyList);
     }
 }

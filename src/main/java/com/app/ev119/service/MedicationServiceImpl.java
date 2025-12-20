@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor @Transactional(rollbackFor = Exception.class)
@@ -25,6 +28,7 @@ public class MedicationServiceImpl implements MedicationService {
 
         List<MedicationDTO> medicationDTOList = medicationList.stream().map((medication) -> {
             MedicationDTO medicationDTO = new MedicationDTO();
+            medicationDTO.setId(medication.getId());
             medicationDTO.setMedicationName(medication.getMedicationName());
             medicationDTO.setMedicationUsage(medication.getMedicationUsage());
             medicationDTO.setMedicationTakingtime(medication.getMedicationTakingtime());
@@ -38,18 +42,43 @@ public class MedicationServiceImpl implements MedicationService {
     @Override
     public void modifyMedications(Long memberId, List<MedicationDTO> medicationDTOs) {
         Member member = entityManager.find(Member.class, memberId);
-        List<Medication> medicationList = medicationDTOs.stream().map((medicationDTO -> {
-            Medication medication = new Medication();
-            if(medicationDTO.getId() != null) {
-                medication.setId(medicationDTO.getId());
+
+        List<Medication> existingMedications = medicationRepository.findByMember_Id(memberId);
+        Set<Long> existingIds = existingMedications.stream()
+                .map(Medication::getId)
+                .collect(Collectors.toSet());
+
+        Set<Long> incomingIds = medicationDTOs.stream()
+                .map(MedicationDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<Medication> toDelete = existingMedications.stream()
+                .filter(med -> !incomingIds.contains(med.getId()))
+                .toList();
+
+        for (Medication medication : toDelete) {
+            medicationRepository.delete(medication);
+        }
+
+        List<Medication> medicationList = medicationDTOs.stream().map(medicationDTO -> {
+            Medication medication;
+
+            if (medicationDTO.getId() != null && existingIds.contains(medicationDTO.getId())) {
+                medication = medicationRepository.findById(medicationDTO.getId())
+                        .orElse(new Medication());
+            } else {
+                medication = new Medication();
             }
+
             medication.setMember(member);
             medication.setMedicationName(medicationDTO.getMedicationName());
             medication.setMedicationUsage(medicationDTO.getMedicationUsage());
             medication.setMedicationTakingtime(medicationDTO.getMedicationTakingtime());
             medicationRepository.saveMedication(medication);
+
             return medication;
-        })).toList();
+        }).toList();
 
         member.setMedications(medicationList);
     }

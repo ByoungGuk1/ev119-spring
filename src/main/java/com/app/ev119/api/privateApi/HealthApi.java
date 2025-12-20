@@ -1,6 +1,7 @@
 package com.app.ev119.api.privateApi;
 
 import com.app.ev119.domain.dto.ApiResponseDTO;
+import com.app.ev119.domain.dto.DiseaseDTO;
 import com.app.ev119.domain.dto.HealthDTO;
 import com.app.ev119.service.HealthService;
 import com.app.ev119.service.MyPageService;
@@ -26,7 +27,7 @@ public class HealthApi {
     }
 
     @PostMapping("/health/modify")
-    public ResponseEntity<ApiResponseDTO> updateHealth(Authentication tokenDTO, HealthDTO healthDTO) {
+    public ResponseEntity<ApiResponseDTO> updateHealth(Authentication tokenDTO, @RequestBody HealthDTO healthDTO) {
         Long memberId = myPageService.findIdByToken(tokenDTO);
         healthService.updateHealth(memberId, healthDTO);
         HealthDTO resultHealthDTO = healthService.findHealth(memberId);
@@ -41,5 +42,14 @@ public class HealthApi {
         HealthDTO healthDTO = healthService.findHealth(memberId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponseDTO.of("멤버의 기저질환 추가", healthDTO));
+    }
+
+    @DeleteMapping("/health/remove-disease")
+    public ResponseEntity<ApiResponseDTO> removeDisease(Authentication tokenDTO, @RequestBody DiseaseDTO diseaseDTO) {
+        Long memberId = myPageService.findIdByToken(tokenDTO);
+        healthService.removeDisease(memberId, diseaseDTO);
+        HealthDTO healthDTO = healthService.findHealth(memberId);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponseDTO.of("멤버의 기저질환 삭제", healthDTO));
     }
 }

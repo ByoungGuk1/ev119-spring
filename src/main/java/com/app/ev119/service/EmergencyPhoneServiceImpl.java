@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,19 +42,45 @@ public class EmergencyPhoneServiceImpl implements EmergencyPhoneService {
     @Override
     public void modifyEmergencyPhones(Long memberId, List<EmergencyPhoneDTO> emergencyPhoneDTOs) {
         Member member = entityManager.find(Member.class, memberId);
-        List<EmergencyPhone> emergencyPhoneList = emergencyPhoneDTOs.stream().map((emergencyPhoneDTO -> {
-            EmergencyPhone emergencyPhone = new EmergencyPhone();
-            if(emergencyPhoneDTO.getId() != null) {
-                emergencyPhone = entityManager.find(EmergencyPhone.class, emergencyPhoneDTO.getId());
+
+        List<EmergencyPhone> existingPhones = emergencyPhoneRepository.findByMember_Id(memberId);
+        Set<Long> existingIds = existingPhones.stream()
+                .map(EmergencyPhone::getId)
+                .collect(Collectors.toSet());
+
+        Set<Long> incomingIds = emergencyPhoneDTOs.stream()
+                .map(EmergencyPhoneDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<EmergencyPhone> toDelete = existingPhones.stream()
+                .filter(phone -> !incomingIds.contains(phone.getId()))
+                .toList();
+
+        for (EmergencyPhone phone : toDelete) {
+            emergencyPhoneRepository.delete(phone);
+        }
+
+        List<EmergencyPhone> phoneList = emergencyPhoneDTOs.stream().map(phoneDTO -> {
+            EmergencyPhone phone;
+
+            if (phoneDTO.getId() != null && existingIds.contains(phoneDTO.getId())) {
+                phone = emergencyPhoneRepository.findById(phoneDTO.getId())
+                        .orElse(new EmergencyPhone());
+            } else {
+                phone = new EmergencyPhone();
             }
-            emergencyPhone.setMember(member);
-            emergencyPhone.setEmergencyPhoneName(emergencyPhoneDTO.getEmergencyPhoneName());
-            emergencyPhone.setEmergencyPhoneNumber(emergencyPhoneDTO.getEmergencyPhoneNumber());
-            emergencyPhone.setEmergencyPhoneRelationship(emergencyPhoneDTO.getEmergencyPhoneRelationship());
-            entityManager.persist(emergencyPhone);
-            return emergencyPhone;
-        })).toList();
-        member.setEmergencyPhones(emergencyPhoneList);
+
+            phone.setMember(member);
+            phone.setEmergencyPhoneName(phoneDTO.getEmergencyPhoneName());
+            phone.setEmergencyPhoneRelationship(phoneDTO.getEmergencyPhoneRelationship());
+            phone.setEmergencyPhoneNumber(phoneDTO.getEmergencyPhoneNumber());
+            emergencyPhoneRepository.saveEmergencyPhone(phone);
+
+            return phone;
+        }).toList();
+
+        member.setEmergencyPhones(phoneList);
     }
 
 }

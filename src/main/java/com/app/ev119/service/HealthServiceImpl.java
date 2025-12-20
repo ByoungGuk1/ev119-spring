@@ -86,4 +86,39 @@ public class HealthServiceImpl implements HealthService {
         healthRepository.saveHealth(health);
     }
 
+    @Override
+    public void removeDisease(Long memberId, DiseaseDTO diseaseDTO){
+        Health health = healthRepository.findByMember_Id(memberId);
+
+        // id가 있는 경우 id로 조회하여 삭제
+        if (diseaseDTO.getId() != null) {
+            Disease disease = diseaseRepository.findById(diseaseDTO.getId())
+                    .orElseThrow(() -> new RuntimeException("삭제할 질병을 찾을 수 없습니다."));
+            
+            // Health와의 연관관계 확인
+            if (disease.getHealth() != null && disease.getHealth().getId().equals(health.getId())) {
+                diseaseRepository.delete(disease);
+            } else {
+                throw new RuntimeException("해당 건강정보의 질병이 아닙니다.");
+            }
+        } else {
+            // id가 없는 경우 diseaseName과 healthId로 조회하여 삭제
+            if (diseaseDTO.getDiseaseName() != null && !diseaseDTO.getDiseaseName().isEmpty()) {
+                List<Disease> diseases = diseaseRepository.findByHealth_Id(health.getId());
+                Disease targetDisease = diseases.stream()
+                        .filter(d -> d.getDiseaseName().equals(diseaseDTO.getDiseaseName()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("삭제할 질병을 찾을 수 없습니다."));
+                
+                diseaseRepository.delete(targetDisease);
+            } else {
+                throw new RuntimeException("질병 정보가 올바르지 않습니다.");
+            }
+        }
+
+        // Health 엔티티의 diseases 리스트 업데이트
+        List<Disease> updatedDiseases = diseaseRepository.findByHealth_Id(health.getId());
+        health.setDiseases(updatedDiseases);
+        healthRepository.saveHealth(health);
+    }
 }
