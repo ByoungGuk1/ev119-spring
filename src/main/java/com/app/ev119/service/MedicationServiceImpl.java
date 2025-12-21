@@ -3,6 +3,8 @@ package com.app.ev119.service;
 import com.app.ev119.domain.dto.MedicationDTO;
 import com.app.ev119.domain.entity.Medication;
 import com.app.ev119.domain.entity.Member;
+import com.app.ev119.exception.MedicationException;
+import com.app.ev119.exception.MyPageException;
 import com.app.ev119.repository.MedicationRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -24,6 +26,9 @@ public class MedicationServiceImpl implements MedicationService {
 
     @Override
     public List<MedicationDTO> findMedications(Long memberId) {
+        if (memberId == null) {
+            throw new MyPageException("회원 ID가 없습니다.");
+        }
         List<Medication> medicationList = medicationRepository.findByMember_Id(memberId);
 
         List<MedicationDTO> medicationDTOList = medicationList.stream().map((medication) -> {
@@ -41,7 +46,13 @@ public class MedicationServiceImpl implements MedicationService {
 
     @Override
     public void modifyMedications(Long memberId, List<MedicationDTO> medicationDTOs) {
+        if (medicationDTOs == null) {
+            throw new MedicationException("복용 약물 정보가 없습니다.");
+        }
         Member member = entityManager.find(Member.class, memberId);
+        if (member == null) {
+            throw new MyPageException("존재하지 않는 회원입니다. memberId: " + memberId);
+        }
 
         List<Medication> existingMedications = medicationRepository.findByMember_Id(memberId);
         Set<Long> existingIds = existingMedications.stream()

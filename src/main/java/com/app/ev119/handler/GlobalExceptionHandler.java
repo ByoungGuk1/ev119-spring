@@ -3,6 +3,7 @@ package com.app.ev119.handler;
 import com.app.ev119.domain.dto.ApiResponseDTO;
 import com.app.ev119.exception.FirstAidException;
 import com.app.ev119.exception.MemberException;
+import com.app.ev119.exception.MyPageException;
 import jakarta.security.auth.message.AuthException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -31,6 +32,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<ApiResponseDTO<Object>> handleAuthException(AuthException e) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponseDTO.of(e.getMessage()));
+    }
+
+    @ExceptionHandler(MyPageException.class)
+    public ResponseEntity<ApiResponseDTO<Object>> handleMyPageException(MyPageException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponseDTO.of(e.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

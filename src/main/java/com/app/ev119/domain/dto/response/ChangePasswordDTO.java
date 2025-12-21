@@ -3,7 +3,7 @@ package com.app.ev119.domain.dto.response;
 import lombok.*;
 
 @Getter @Setter @ToString
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChangePasswordDTO {
