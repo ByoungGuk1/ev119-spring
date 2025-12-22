@@ -68,9 +68,10 @@ public class VisitedServiceImpl implements VisitedService {
         visit.setVisitedName(visitedDTO.getVisitedName());
         visitedRepository.saveVisited(visit);
 
-        List<Visited> visitedList = visitedRepository.findByMember_Id(member.getId());
-        member.setVisited(visitedList);
-        entityManager.merge(member);
+        member.getVisited().add(visit);
+//        List<Visited> visitedList = visitedRepository.findByMember_Id(member.getId());
+//        member.setVisited(visitedList);
+//        entityManager.merge(member);
     }
 
     @Override
@@ -78,11 +79,15 @@ public class VisitedServiceImpl implements VisitedService {
         if (visitedDTO == null || visitedDTO.getId() == null) {
             throw new VisitedException("삭제할 방문 이력 정보가 없습니다.");
         }
+
+        Visited visited = visitedRepository.findById(visitedDTO.getId()).orElseThrow();
+        if (!visited.getMember().getId().equals(memberId)) {
+            throw new VisitedException("일치하는 사용자가 없습니다.");
+        }
+
         visitedRepository.deleteById(visitedDTO.getId());
-        List<Visited> visitedList = visitedRepository.findByMember_Id(memberId);
         Member member = entityManager.find(Member.class, memberId);
-        member.setVisited(visitedList);
-        entityManager.merge(member);
+        member.getVisited().remove(visited);
     }
 
     @Override
