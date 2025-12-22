@@ -11,6 +11,9 @@ import com.app.ev119.repository.MemberRepository;
 import com.app.ev119.service.member.MemberService;
 import com.app.ev119.service.sms.SmsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.RedisConnectionFailureException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +31,28 @@ public class MemberApi {
     private final MemberRepository memberRepository;
 
 
+    private final StringRedisTemplate stringRedisTemplate;
+
+
+    private boolean isRedisAvailable() {
+        try {
+            // exists/hasKey는 가볍고, 연결 안되면 여기서 예외가 터짐
+            stringRedisTemplate.hasKey("health:redis");
+            return true;
+        } catch (RedisConnectionFailureException e) {
+            return false;
+        } catch (DataAccessException e) {
+            return false;
+        }
+    }
+
+
+    private ResponseEntity<ApiResponseDTO> redisDown() {
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponseDTO.of("Redis 연결이 불가하여 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요."));
+    }
+
     @PostMapping("/signup")
     public ResponseEntity<ApiResponseDTO> signUp(@RequestBody SignUpRequestDTO signUpRequestDTO) {
         memberService.signUp(signUpRequestDTO);
@@ -35,7 +60,6 @@ public class MemberApi {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponseDTO.of("회원가입이 완료되었습니다"));
     }
-
 
     @PostMapping("/staff/signup")
     public ResponseEntity<ApiResponseDTO> signUpStaff(@RequestBody MemberStaffSignUpRequestDTO dto) {
@@ -45,13 +69,17 @@ public class MemberApi {
                 .body(ApiResponseDTO.of("의료진 회원가입 신청이 완료되었습니다. (승인 대기)"));
     }
 
-
     @PostMapping("/login")
     public ResponseEntity<ApiResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
 
+
+        if (!isRedisAvailable()) {
+            return redisDown();
+        }
+
         LoginResponseDTO loginResponse = memberService.login(loginRequestDTO);
 
-        // refresh token 쿠키로 저장
+
         String refreshToken = loginResponse.getRefreshToken();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
@@ -61,8 +89,6 @@ public class MemberApi {
                 .sameSite("Lax")
                 .build();
 
-        // memberType 내려주고 싶으면 DB 조회해서 포함 (프론트 분기용)
-        // (LoginResponseDTO에 memberType 필드 추가해도 되지만, 최소 수정으로 여기서만 처리)
         Member member = memberRepository.findById(loginResponse.getMemberId())
                 .orElse(null);
 
@@ -80,11 +106,15 @@ public class MemberApi {
                 .body(ApiResponseDTO.of("로그인이 성공했습니다", data));
     }
 
-
     @DeleteMapping("/logout")
     public ResponseEntity<ApiResponseDTO> logout(
             @CookieValue(name = "refreshToken", required = false) String refreshToken
     ) {
+
+        if (!isRedisAvailable()) {
+            return redisDown();
+        }
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null ||
@@ -112,11 +142,14 @@ public class MemberApi {
                 .body(ApiResponseDTO.of("로그아웃 되었습니다."));
     }
 
-
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponseDTO> refreshToken(
             @CookieValue(name = "refreshToken", required = false) String refreshToken
     ) {
+
+        if (!isRedisAvailable()) {
+            return redisDown();
+        }
 
         if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity
@@ -150,13 +183,11 @@ public class MemberApi {
                 .body(ApiResponseDTO.of("토큰이 재발급 되었습니다", data));
     }
 
-
     @PostMapping("/password/reset")
     public ResponseEntity<ApiResponseDTO> resetPassword(@RequestBody ResetPasswordRequestDTO dto) {
         memberService.resetPassword(dto.getResetToken(), dto.getNewPassword());
         return ResponseEntity.ok(ApiResponseDTO.of("비밀번호 변경 완료"));
     }
-
 
     @PostMapping("/verify")
     public ResponseEntity<ApiResponseDTO> verify(@RequestParam String authCode,

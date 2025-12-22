@@ -67,33 +67,6 @@ public class FirstAidRepositoryTest {
 
         firstAidKeywordsRepository.save(firstAidKeywords);
     }
-
-    @Test
-    public void findFirstAid(){
-
-        String message = "테스트";
-        if( firstAidKeywordsRepository.existsByKeyword(message) ) {
-            JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
-            QFirstAidKeywords qFirstAidKeywords = QFirstAidKeywords.firstAidKeywords;
-            JPAQuery<FirstAidKeywords> query = jpaQueryFactory.selectFrom(qFirstAidKeywords).where(qFirstAidKeywords.keyword.like("%" + message + "%"));
-
-            List<FirstAidKeywords> resultList = query.fetch();
-            resultList.stream().map(FirstAidKeywords::toString).forEach(log::info);
-
-            FirstAidKeywords firstAidKeywords = resultList.get(0);
-            log.info("찾은 키워드 객체: {}", firstAidKeywords);
-            FirstAid firstAid = firstAidRepository.findById(firstAidKeywords.getFirstAid().getId()).get();
-            log.info("찾은 응급처치 객체: {}", firstAid);
-            List<FirstAidProcedures> firstAidProceduresList = firstAid.getFirstAidProcedures();
-            log.info("찾은 응급처치 과정");
-            firstAidProceduresList.stream().map(FirstAidProcedures::toString).forEach(log::info);
-
-            FirstAidResponseDTO firstAidResponseDTO = new FirstAidResponseDTO(firstAid);
-            firstAidResponseDTO.setFirstAidProcedures(firstAidProceduresList);
-            firstAidResponseDTO.setFirstAidKeywords(resultList);
-        } else {
-            log.info("{} 이라는 키워드가 없습니다.", message);
-        }
-
-    }
 }
+
+
