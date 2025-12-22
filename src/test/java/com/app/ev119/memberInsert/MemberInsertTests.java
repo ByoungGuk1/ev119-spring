@@ -46,15 +46,14 @@ public class MemberInsertTests {
     public void seedMembersWithAllData() throws RuntimeException {
         Long memberId = createMember(123);
         fillAllData(memberId, 1);
+        entityManager.flush();
+        entityManager.clear();
+        changeFirstData(memberId);
 
         for (int i = 1; i <= 20; i++) {
             memberId = createMember(i);
             fillAllData(memberId, i);
         }
-
-        entityManager.flush();
-        entityManager.clear();
-        changeFirstData(memberId);
     }
 
 //    @Test
@@ -170,8 +169,9 @@ public class MemberInsertTests {
         healthDTO.setHealthBloodAbo(BloodAbo.B);
         healthDTO.setHealthHeight(169.5);
         healthDTO.setHealthWeight(51.7);
-        healthDTO.setDiseases(new ArrayList<>());
-        healthDTO.getDiseases().clear();
+        healthDTO.getDiseases().forEach(diseaseDTO -> {
+            healthService.removeDisease(memberId, diseaseDTO);
+        });
         healthService.updateHealth(memberId, healthDTO);
 
         healthService.addDisease(memberId, "척추측만증");
