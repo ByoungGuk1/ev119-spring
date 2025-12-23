@@ -5,7 +5,8 @@ import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -193,4 +194,30 @@ class MemberTest {
                 .fetch();
         tuples.forEach((tuple)->log.info("{}", tuple));
     }
+
+    @Test
+    void insertAdminAccount() {
+        log.info("🔥 insertAdminAccount START");
+
+        try {
+            Member admin = new Member();
+            admin.setMemberName("EV119 관리자");
+            admin.setMemberEmail("admin" + System.currentTimeMillis() + "@ev119.com");
+            admin.setMemberPassword(passwordEncoder.encode("admin1234"));
+            admin.setMemberPhone("010" + (int)(Math.random()*9000+1000) + "8888"); // 중복 회피
+            admin.setMemberType(MemberType.ADMIN);
+
+            entityManager.persist(admin);
+            entityManager.flush();
+
+            log.info("🔥 AFTER FLUSH, id={}", admin.getId());
+        } catch (Exception e) {
+            log.error("❌ flush 실패", e);
+            throw e;
+        }
+    }
+
+
+
+
 }

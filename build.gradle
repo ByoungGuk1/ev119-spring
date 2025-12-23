@@ -57,6 +57,7 @@ dependencies {
     annotationProcessor "jakarta.annotation:jakarta.annotation-api"
     annotationProcessor "jakarta.persistence:jakarta.persistence-api"
     implementation 'net.nurigo:sdk:4.3.2'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
 
 }
 

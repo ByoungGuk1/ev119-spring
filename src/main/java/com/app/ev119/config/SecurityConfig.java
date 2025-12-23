@@ -1,5 +1,6 @@
 package com.app.ev119.config;
 
+import com.app.ev119.filter.RedisRequiredForOAuth2Filter;
 import com.app.ev119.handler.JwtAuthenticationEntryPoint;
 import com.app.ev119.handler.OAuth2LoginSuccessHandler;
 import com.app.ev119.jwt.JwtAuthenticationFilter;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -24,6 +26,8 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
+    private final RedisRequiredForOAuth2Filter redisRequiredForOAuth2Filter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
@@ -35,12 +39,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/member/signup", "/api/member/login", "/api/member/refresh").permitAll()
                         .requestMatchers("/api/member/verify", "/api/member/password/reset").permitAll()
                         .requestMatchers("/api/member/staff/signup").permitAll()
+
+                        .requestMatchers("/oauth2/**", "/login/**").permitAll()
+
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/private/**").authenticated()
 
                         .anyRequest().permitAll()
                 )
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+
+                .addFilterBefore(redisRequiredForOAuth2Filter, OAuth2AuthorizationRequestRedirectFilter.class)
+
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2.successHandler(oAuth2LoginSuccessHandler));
 
