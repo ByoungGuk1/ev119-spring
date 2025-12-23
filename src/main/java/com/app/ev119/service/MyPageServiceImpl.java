@@ -89,7 +89,6 @@ public class MyPageServiceImpl implements MyPageService {
         visitedRepository.deleteByMember_Id(memberId);
         memberSocialRepository.deleteByMemberId(memberId);
         entityManager.flush();
-        entityManager.clear();
 
         healthRepository.deleteByMember_Id(memberId);
         if(entityManager.find(Member.class, memberId) != null){
@@ -106,8 +105,12 @@ public class MyPageServiceImpl implements MyPageService {
         if (foundMember == null) {
             throw new MyPageException("존재하지 않는 회원입니다. memberId: " + memberId);
         }
-        String encodedPassword = passwordEncoder.encode(password.getNewPassword());
-        foundMember.setMemberPassword(encodedPassword);
+        if(passwordEncoder.matches(password.getCurrentPassword(), foundMember.getMemberPassword())){
+            String encodedPassword = passwordEncoder.encode(password.getNewPassword());
+            foundMember.setMemberPassword(encodedPassword);
+        } else {
+            throw new MyPageException("비밀번호가 일치하지 않습니다.");
+        }
     }
 
     @Override
