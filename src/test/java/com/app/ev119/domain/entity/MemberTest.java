@@ -202,9 +202,10 @@ class MemberTest {
         try {
             Member admin = new Member();
             admin.setMemberName("EV119 관리자");
-            admin.setMemberEmail("admin" + System.currentTimeMillis() + "@ev119.com");
+            admin.setMemberEmail("admin1" + "@ev119.com");
             admin.setMemberPassword(passwordEncoder.encode("admin1234"));
-            admin.setMemberPhone("010" + (int)(Math.random()*9000+1000) + "8888"); // 중복 회피
+            admin.setMemberPhone("010" + "1234" + "8888"); // 중복 회피
+
             admin.setMemberType(MemberType.ADMIN);
 
             entityManager.persist(admin);

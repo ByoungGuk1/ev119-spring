@@ -1,6 +1,7 @@
 package com.app.ev119.api.privateApi;
 
 import com.app.ev119.domain.dto.ApiResponseDTO;
+import com.app.ev119.domain.dto.response.admin.AdminPendingStaffResponseDTO;
 import com.app.ev119.domain.entity.MemberStaff;
 import com.app.ev119.domain.type.StaffStatus;
 import com.app.ev119.repository.MemberStaffRepository;
@@ -24,12 +25,41 @@ public class AdminStaffApi {
     @GetMapping("/staff/pending")
     public ResponseEntity<ApiResponseDTO> pendingStaff() {
 
-        List<MemberStaff> pendingList = memberStaffRepository.findAllMemberStaffs().stream()
-                .filter(memberStaff -> memberStaff.getStaffStatus() == StaffStatus.PENDING)
+        List<AdminPendingStaffResponseDTO> pendingList = memberStaffRepository.findAll().stream()
+                .filter(ms -> ms.getStaffStatus() == StaffStatus.PENDING)
+                .map(ms -> AdminPendingStaffResponseDTO.builder()
+                        .id(ms.getId())
+                        .staffStatus(ms.getStaffStatus())
+                        .licenseNumber(ms.getLicenseNumber())
+                        .memberId(ms.getMember().getId())
+                        .memberName(ms.getMember().getMemberName())
+                        .memberEmail(ms.getMember().getMemberEmail())
+                        .build())
                 .toList();
 
         return ResponseEntity.ok(ApiResponseDTO.of("의료진 승인 대기 목록", pendingList));
     }
+
+    @GetMapping("/staff")
+    public ResponseEntity<ApiResponseDTO> staffList(
+            @RequestParam(value = "status", required = false) StaffStatus status
+    ) {
+        List<AdminPendingStaffResponseDTO> list = memberStaffRepository.findAll().stream()
+                .filter(ms -> status == null || ms.getStaffStatus() == status)
+                .map(ms -> AdminPendingStaffResponseDTO.builder()
+                        .id(ms.getId())
+                        .staffStatus(ms.getStaffStatus())
+                        .licenseNumber(ms.getLicenseNumber())
+                        .memberId(ms.getMember().getId())
+                        .memberName(ms.getMember().getMemberName())
+                        .memberEmail(ms.getMember().getMemberEmail())
+                        .build())
+                .toList();
+
+        return ResponseEntity.ok(ApiResponseDTO.of("의료진 신청 목록", list));
+    }
+
+
 
     @PatchMapping("/staff/{memberStaffId}/approve")
     public ResponseEntity<ApiResponseDTO> approveStaff(@PathVariable Long memberStaffId) {
