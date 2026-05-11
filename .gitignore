@@ -38,3 +38,5 @@ out/
 
 *.yml
 *.env
+
+!application.example.yml
